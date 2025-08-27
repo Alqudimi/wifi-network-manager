@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الكروت - نظام إدارة شبكات Wi-Fi{% endblock %}
+
+{% block content %}
+<div class="vouchers-page">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">إدارة الكروت</h1>
+            <p class="page-subtitle">إنشاء وإدارة كروت الوصول للإنترنت</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="app.showModal('create-voucher-modal')">
+                <i data-feather="plus"></i>
+                إنشاء دفعة جديدة
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">فلترة الكروت</h3>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" class="filter-form">
+                <div class="filter-row">
+                    <div class="form-group">
+                        <label class="form-label">الحالة</label>
+                        <select name="status" class="form-select">
+                            <option value="">جميع الحالات</option>
+                            <option value="active">نشط</option>
+                            <option value="used">مستخدم</option>
+                            <option value="expired">منتهي</option>
+                            <option value="disabled">معطل</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">الدفعة</label>
+                        <select name="batch_id" class="form-select" id="batch-filter">
+                            <option value="">جميع الدفعات</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">البحث</label>
+                        <input type="text" name="search" class="form-input" placeholder="البحث في كود الكرت">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">تطبيق</button>
+                        <button type="button" id="clear-filters" class="btn btn-secondary">مسح</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div id="bulk-actions" class="bulk-actions" style="display: none;">
+        <div class="card">
+            <div class="card-body">
+                <div class="bulk-content">
+                    <span>تم تحديد <span class="selected-count">0</span> كرت</span>
+                    <div class="bulk-buttons">
+                        <button class="btn btn-sm btn-success" id="print-selected">
+                            <i data-feather="printer"></i>
+                            طباعة المحدد
+                        </button>
+                        <button class="btn btn-sm btn-warning" id="disable-selected">
+                            <i data-feather="x-circle"></i>
+                            تعطيل المحدد
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vouchers Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">قائمة الكروت</h3>
+        </div>
+        <div class="card-body">
+            <div id="vouchers-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل الكروت...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <div class="pagination-info">
+            <span id="pagination-info">عرض 0-0 من 0</span>
+        </div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- Batches Overview -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">دفعات الكروت</h3>
+        </div>
+        <div class="card-body">
+            <div id="batches-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل الدفعات...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Create Voucher Modal -->
+<div id="create-voucher-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">إنشاء دفعة كروت جديدة</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="create-voucher-form">
+                <div class="form-group">
+                    <label class="form-label">عدد الكروت</label>
+                    <input type="number" 
+                           name="count" 
+                           class="form-input" 
+                           min="1" 
+                           max="1000" 
+                           value="10" 
+                           required>
+                    <small class="form-help">الحد الأقصى: 1000 كرت</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">مدة الصلاحية (ساعات)</label>
+                    <select name="duration_hours" class="form-select" required>
+                        <option value="1">ساعة واحدة</option>
+                        <option value="3">3 ساعات</option>
+                        <option value="6">6 ساعات</option>
+                        <option value="12">12 ساعة</option>
+                        <option value="24" selected>24 ساعة (يوم واحد)</option>
+                        <option value="48">48 ساعة (يومان)</option>
+                        <option value="72">72 ساعة (3 أيام)</option>
+                        <option value="168">أسبوع واحد</option>
+                        <option value="720">شهر واحد</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">حد البيانات (MB)</label>
+                    <select name="data_limit_mb" class="form-select">
+                        <option value="">غير محدود</option>
+                        <option value="100">100 MB</option>
+                        <option value="500">500 MB</option>
+                        <option value="1024">1 GB</option>
+                        <option value="2048">2 GB</option>
+                        <option value="5120">5 GB</option>
+                        <option value="10240">10 GB</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="plus"></i>
+                        إنشاء الكروت
+                    </button>
+                    <button type="button" class="btn btn-secondary modal-close">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Modal -->
+<div id="qr-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">QR Code للكرت</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="qr-container">
+                <div class="voucher-code-display"></div>
+                <img class="qr-display" src="" alt="QR Code">
+                <div class="qr-instructions">
+                    <p>امسح الكود أو ادخل الرقم في صفحة الدخول</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.filter-form {
+    margin: 0;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto;
+    gap: 1rem;
+    align-items: end;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.bulk-actions {
+    margin: 1rem 0;
+}
+
+.bulk-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bulk-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.voucher-code {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.voucher-code:hover {
+    background-color: #f0f9ff;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: var(--surface-color);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.pagination {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.pagination .btn {
+    min-width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.batch-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    text-align: center;
+}
+
+.batch-stats .stat {
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+}
+
+.batch-stats .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.batch-stats .stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.batch-date {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.qr-container {
+    text-align: center;
+    padding: 1rem;
+}
+
+.voucher-code-display {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-family: 'Courier New', monospace;
+}
+
+.qr-display {
+    max-width: 200px;
+    height: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+}
+
+.qr-instructions {
+    margin-top: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.form-help {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .filter-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .bulk-content {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .bulk-buttons {
+        justify-content: center;
+    }
+    
+    .pagination-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .batch-stats {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/vouchers.js') }}"></script>
+{% endblock %}

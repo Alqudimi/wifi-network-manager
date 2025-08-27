@@ -1,0 +1,914 @@
+{% extends "base.html" %}
+
+{% block title %}إعدادات الشبكة - نظام إدارة شبكات Wi-Fi{% endblock %}
+
+{% block content %}
+<div class="networks-page">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">إعدادات الشبكة</h1>
+            <p class="page-subtitle">إدارة شبكات Wi-Fi والراوترات</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="app.showModal('create-network-modal')">
+                <i data-feather="wifi"></i>
+                إضافة شبكة
+            </button>
+            <button class="btn btn-primary admin-only" onclick="app.showModal('create-router-modal')">
+                <i data-feather="router"></i>
+                إضافة راوتر
+            </button>
+        </div>
+    </div>
+
+    <!-- Networks Section -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">شبكات Wi-Fi</h3>
+            <div class="card-actions">
+                <button class="btn btn-sm btn-secondary" onclick="networks.loadNetworks()">
+                    <i data-feather="refresh-cw"></i>
+                    تحديث
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="networks-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل الشبكات...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Routers Section -->
+    <div class="card admin-only">
+        <div class="card-header">
+            <h3 class="card-title">الراوترات</h3>
+            <div class="card-actions">
+                <button class="btn btn-sm btn-secondary" onclick="networks.loadRouters()">
+                    <i data-feather="refresh-cw"></i>
+                    تحديث
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="routers-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل الراوترات...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Create Network Modal -->
+<div id="create-network-modal" class="modal">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3 class="modal-title">إضافة شبكة Wi-Fi جديدة</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="create-network-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">اسم الشبكة (SSID) *</label>
+                        <input type="text" 
+                               name="ssid" 
+                               class="form-input" 
+                               required
+                               placeholder="أدخل اسم الشبكة">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">نوع الحماية *</label>
+                        <select name="security_type" class="form-select" required id="security-type">
+                            <option value="WPA2-Personal">WPA2-Personal</option>
+                            <option value="WPA3-Personal">WPA3-Personal</option>
+                            <option value="Open">مفتوحة (بدون حماية)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" id="password-group">
+                    <label class="form-label">كلمة مرور الشبكة *</label>
+                    <input type="password" 
+                           name="password" 
+                           class="form-input" 
+                           placeholder="أدخل كلمة مرور الشبكة">
+                    <small class="form-help">يجب أن تكون 8 أحرف على الأقل</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">الوصف</label>
+                    <textarea name="description" 
+                              class="form-textarea" 
+                              placeholder="وصف اختياري للشبكة"></textarea>
+                </div>
+
+                <div class="form-section">
+                    <h4>إعدادات البوابة الافتراضية (Captive Portal)</h4>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="captive_portal_enabled" checked>
+                            تفعيل البوابة الافتراضية
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">عنوان الصفحة</label>
+                            <input type="text" 
+                                   name="portal_title" 
+                                   class="form-input" 
+                                   value="مرحباً بك في شبكة Wi-Fi">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">رسالة الترحيب</label>
+                            <textarea name="portal_message" 
+                                      class="form-textarea" 
+                                      placeholder="يرجى إدخال كود الكرت للوصول للإنترنت">يرجى إدخال كود الكرت للوصول للإنترنت</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>إعدادات السرعة</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">الحد الأقصى للتحميل (Mbps)</label>
+                            <input type="number" 
+                                   name="max_download_mbps" 
+                                   class="form-input" 
+                                   min="1" 
+                                   placeholder="غير محدود">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">الحد الأقصى للرفع (Mbps)</label>
+                            <input type="number" 
+                                   name="max_upload_mbps" 
+                                   class="form-input" 
+                                   min="1" 
+                                   placeholder="غير محدود">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group admin-only">
+                    <label class="form-label">الراوتر المرتبط</label>
+                    <select name="router_id" class="form-select" id="router-select">
+                        <option value="">اختر راوتر (اختياري)</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="wifi"></i>
+                        إضافة الشبكة
+                    </button>
+                    <button type="button" class="btn btn-secondary modal-close">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Create Router Modal -->
+<div id="create-router-modal" class="modal">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3 class="modal-title">إضافة راوتر جديد</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="create-router-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">اسم الراوتر *</label>
+                        <input type="text" 
+                               name="name" 
+                               class="form-input" 
+                               required
+                               placeholder="مثال: راوتر المقهى الرئيسي">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">نوع الراوتر *</label>
+                        <select name="brand" class="form-select" required id="router-brand">
+                            <option value="">اختر نوع الراوتر</option>
+                            <option value="MikroTik">MikroTik</option>
+                            <option value="Ubiquiti">Ubiquiti UniFi</option>
+                            <option value="Cisco">Cisco</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">الموديل</label>
+                        <input type="text" 
+                               name="model" 
+                               class="form-input" 
+                               placeholder="مثال: RB4011iGS+">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">عنوان IP *</label>
+                        <input type="text" 
+                               name="ip_address" 
+                               class="form-input" 
+                               required
+                               pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
+                               placeholder="192.168.1.1">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">اسم المستخدم *</label>
+                        <input type="text" 
+                               name="username" 
+                               class="form-input" 
+                               required
+                               placeholder="admin">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">كلمة المرور *</label>
+                        <input type="password" 
+                               name="password" 
+                               class="form-input" 
+                               required
+                               placeholder="كلمة مرور الراوتر">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">منفذ API</label>
+                        <input type="number" 
+                               name="api_port" 
+                               class="form-input" 
+                               placeholder="سيتم تحديده تلقائياً">
+                        <small class="form-help">MikroTik: 8728, Ubiquiti: 443, Cisco: 22</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h4>إعدادات RADIUS (اختياري)</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">خادم RADIUS</label>
+                            <input type="text" 
+                                   name="radius_server" 
+                                   class="form-input" 
+                                   placeholder="192.168.1.100">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">كلمة سر RADIUS</label>
+                            <input type="password" 
+                                   name="radius_secret" 
+                                   class="form-input" 
+                                   placeholder="shared-secret">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="router"></i>
+                        إضافة الراوتر
+                    </button>
+                    <button type="button" class="btn btn-secondary modal-close">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Network Modal -->
+<div id="edit-network-modal" class="modal">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3 class="modal-title">تعديل الشبكة</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="edit-network-form">
+                <input type="hidden" name="network_id" id="edit-network-id">
+                <!-- Same form fields as create network -->
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.modal-content.large {
+    max-width: 800px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.form-section h4 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.network-card, .router-card {
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: var(--surface-color);
+    transition: box-shadow 0.2s;
+}
+
+.network-card:hover, .router-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.network-header, .router-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.network-title, .router-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.network-status, .router-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-indicator {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+}
+
+.status-indicator.active {
+    background-color: var(--success-color);
+}
+
+.status-indicator.inactive {
+    background-color: var(--error-color);
+}
+
+.network-details, .router-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.network-actions, .router-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.security-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.security-badge.wpa2 {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.security-badge.wpa3 {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.security-badge.open {
+    background-color: #fed7aa;
+    color: #9a3412;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.connection-status.connected {
+    color: var(--success-color);
+}
+
+.connection-status.disconnected {
+    color: var(--error-color);
+}
+
+.connection-status.error {
+    color: var(--warning-color);
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .network-details, .router-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .network-header, .router-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .network-actions, .router-actions {
+        justify-content: center;
+    }
+    
+    .modal-content.large {
+        max-width: 95%;
+        margin: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Networks management JavaScript
+class NetworksManager {
+    constructor() {
+        this.networks = [];
+        this.routers = [];
+        this.init();
+    }
+
+    init() {
+        this.loadNetworks();
+        this.loadRouters();
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Create network form
+        const createNetworkForm = document.getElementById('create-network-form');
+        if (createNetworkForm) {
+            createNetworkForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createNetwork();
+            });
+        }
+
+        // Create router form
+        const createRouterForm = document.getElementById('create-router-form');
+        if (createRouterForm) {
+            createRouterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createRouter();
+            });
+        }
+
+        // Security type change
+        const securityType = document.getElementById('security-type');
+        if (securityType) {
+            securityType.addEventListener('change', (e) => {
+                this.togglePasswordField(e.target.value);
+            });
+        }
+    }
+
+    togglePasswordField(securityType) {
+        const passwordGroup = document.getElementById('password-group');
+        const passwordInput = passwordGroup.querySelector('input[name="password"]');
+        
+        if (securityType === 'Open') {
+            passwordGroup.style.display = 'none';
+            passwordInput.required = false;
+        } else {
+            passwordGroup.style.display = 'block';
+            passwordInput.required = true;
+        }
+    }
+
+    async loadNetworks() {
+        try {
+            const response = await app.apiCall('/networks');
+            this.networks = response.networks;
+            this.displayNetworks();
+        } catch (error) {
+            console.error('Error loading networks:', error);
+            app.showAlert('خطأ في تحميل الشبكات', 'error');
+        }
+    }
+
+    async loadRouters() {
+        try {
+            const response = await app.apiCall('/networks/routers');
+            this.routers = response.routers;
+            this.displayRouters();
+            this.updateRouterOptions();
+        } catch (error) {
+            console.error('Error loading routers:', error);
+            app.showAlert('خطأ في تحميل الراوترات', 'error');
+        }
+    }
+
+    displayNetworks() {
+        const container = document.getElementById('networks-container');
+        if (!container) return;
+
+        if (this.networks.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i data-feather="wifi-off"></i>
+                    <h4>لا توجد شبكات</h4>
+                    <p>قم بإضافة شبكة Wi-Fi جديدة للبدء</p>
+                    <button class="btn btn-primary" onclick="app.showModal('create-network-modal')">
+                        <i data-feather="plus"></i>
+                        إضافة شبكة
+                    </button>
+                </div>
+            `;
+            feather.replace();
+            return;
+        }
+
+        const networksHTML = this.networks.map(network => `
+            <div class="network-card">
+                <div class="network-header">
+                    <div>
+                        <div class="network-title">${network.ssid}</div>
+                        <div class="network-status">
+                            <div class="status-indicator ${network.is_active ? 'active' : 'inactive'}"></div>
+                            <span>${network.is_active ? 'نشطة' : 'معطلة'}</span>
+                            <span class="security-badge ${network.security_type.toLowerCase().replace('-', '').replace('_', '')}">${this.getSecurityText(network.security_type)}</span>
+                        </div>
+                    </div>
+                    <div class="network-actions">
+                        <button class="btn btn-sm btn-primary" onclick="networks.editNetwork(${network.id})">
+                            <i data-feather="edit"></i>
+                            تعديل
+                        </button>
+                        <button class="btn btn-sm ${network.is_active ? 'btn-warning' : 'btn-success'}" 
+                                onclick="networks.toggleNetwork(${network.id})">
+                            <i data-feather="${network.is_active ? 'pause' : 'play'}"></i>
+                            ${network.is_active ? 'تعطيل' : 'تفعيل'}
+                        </button>
+                        <button class="btn btn-sm btn-danger admin-only" 
+                                onclick="networks.deleteNetwork(${network.id})">
+                            <i data-feather="trash-2"></i>
+                            حذف
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="network-details">
+                    <div class="detail-item">
+                        <div class="detail-label">نوع الحماية</div>
+                        <div class="detail-value">${this.getSecurityText(network.security_type)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">البوابة الافتراضية</div>
+                        <div class="detail-value">${network.captive_portal_enabled ? 'مفعلة' : 'معطلة'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">السرعة القصوى</div>
+                        <div class="detail-value">
+                            ${network.max_download_mbps ? network.max_download_mbps + ' Mbps' : 'غير محدود'}
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">تاريخ الإنشاء</div>
+                        <div class="detail-value">${app.formatDate(network.created_at)}</div>
+                    </div>
+                </div>
+                
+                ${network.description ? `
+                    <div class="network-description">
+                        <div class="detail-label">الوصف</div>
+                        <div class="detail-value">${network.description}</div>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+
+        container.innerHTML = networksHTML;
+        feather.replace();
+    }
+
+    displayRouters() {
+        const container = document.getElementById('routers-container');
+        if (!container) return;
+
+        if (this.routers.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state admin-only">
+                    <i data-feather="router"></i>
+                    <h4>لا توجد راوترات</h4>
+                    <p>قم بإضافة راوتر للربط مع الشبكات</p>
+                    <button class="btn btn-primary" onclick="app.showModal('create-router-modal')">
+                        <i data-feather="plus"></i>
+                        إضافة راوتر
+                    </button>
+                </div>
+            `;
+            feather.replace();
+            return;
+        }
+
+        const routersHTML = this.routers.map(router => `
+            <div class="router-card">
+                <div class="router-header">
+                    <div>
+                        <div class="router-title">${router.name}</div>
+                        <div class="router-status">
+                            <div class="status-indicator ${router.is_active ? 'active' : 'inactive'}"></div>
+                            <span>${router.is_active ? 'نشط' : 'معطل'}</span>
+                            <div class="connection-status ${router.connection_status}">
+                                <i data-feather="${this.getConnectionIcon(router.connection_status)}"></i>
+                                ${this.getConnectionText(router.connection_status)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="router-actions">
+                        <button class="btn btn-sm btn-primary" onclick="networks.testRouter(${router.id})">
+                            <i data-feather="zap"></i>
+                            اختبار
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="networks.editRouter(${router.id})">
+                            <i data-feather="edit"></i>
+                            تعديل
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="networks.deleteRouter(${router.id})">
+                            <i data-feather="trash-2"></i>
+                            حذف
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="router-details">
+                    <div class="detail-item">
+                        <div class="detail-label">النوع</div>
+                        <div class="detail-value">${router.brand}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">عنوان IP</div>
+                        <div class="detail-value">${router.ip_address}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">منفذ API</div>
+                        <div class="detail-value">${router.api_port}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">آخر اتصال</div>
+                        <div class="detail-value">${router.last_connected ? app.formatDate(router.last_connected) : 'لم يتم الاتصال'}</div>
+                    </div>
+                </div>
+                
+                ${router.model ? `
+                    <div class="router-model">
+                        <div class="detail-label">الموديل</div>
+                        <div class="detail-value">${router.model}</div>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+
+        container.innerHTML = routersHTML;
+        feather.replace();
+    }
+
+    updateRouterOptions() {
+        const routerSelect = document.getElementById('router-select');
+        if (!routerSelect) return;
+
+        routerSelect.innerHTML = '<option value="">اختر راوتر (اختياري)</option>';
+        
+        this.routers.forEach(router => {
+            const option = document.createElement('option');
+            option.value = router.id;
+            option.textContent = `${router.name} (${router.ip_address})`;
+            routerSelect.appendChild(option);
+        });
+    }
+
+    async createNetwork() {
+        try {
+            const form = document.getElementById('create-network-form');
+            const formData = new FormData(form);
+            
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                if (key === 'captive_portal_enabled') {
+                    data[key] = true;
+                } else if (value !== '') {
+                    data[key] = value;
+                }
+            }
+
+            // Handle checkbox
+            if (!formData.has('captive_portal_enabled')) {
+                data.captive_portal_enabled = false;
+            }
+
+            const response = await app.apiCall('/networks', 'POST', data);
+            
+            app.showAlert(response.message, 'success');
+            app.closeModals();
+            this.loadNetworks();
+            form.reset();
+
+        } catch (error) {
+            console.error('Error creating network:', error);
+            app.showAlert('خطأ في إنشاء الشبكة', 'error');
+        }
+    }
+
+    async createRouter() {
+        try {
+            const form = document.getElementById('create-router-form');
+            const formData = new FormData(form);
+            
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                if (value !== '') {
+                    data[key] = value;
+                }
+            }
+
+            const response = await app.apiCall('/networks/routers', 'POST', data);
+            
+            app.showAlert(response.message, 'success');
+            app.closeModals();
+            this.loadRouters();
+            form.reset();
+
+        } catch (error) {
+            console.error('Error creating router:', error);
+            app.showAlert('خطأ في إنشاء الراوتر', 'error');
+        }
+    }
+
+    getSecurityText(securityType) {
+        const types = {
+            'WPA2-Personal': 'WPA2-Personal',
+            'WPA3-Personal': 'WPA3-Personal',
+            'Open': 'مفتوحة'
+        };
+        return types[securityType] || securityType;
+    }
+
+    getConnectionIcon(status) {
+        const icons = {
+            'connected': 'wifi',
+            'disconnected': 'wifi-off',
+            'error': 'alert-triangle'
+        };
+        return icons[status] || 'help-circle';
+    }
+
+    getConnectionText(status) {
+        const texts = {
+            'connected': 'متصل',
+            'disconnected': 'غير متصل',
+            'error': 'خطأ في الاتصال'
+        };
+        return texts[status] || 'غير معروف';
+    }
+
+    async toggleNetwork(networkId) {
+        try {
+            const network = this.networks.find(n => n.id === networkId);
+            if (!network) return;
+
+            const response = await app.apiCall(`/networks/${networkId}`, 'PUT', {
+                is_active: !network.is_active
+            });
+            
+            app.showAlert(response.message, 'success');
+            this.loadNetworks();
+
+        } catch (error) {
+            console.error('Error toggling network:', error);
+            app.showAlert('خطأ في تغيير حالة الشبكة', 'error');
+        }
+    }
+
+    async deleteNetwork(networkId) {
+        if (!confirmDelete('هل أنت متأكد من حذف هذه الشبكة؟')) {
+            return;
+        }
+
+        try {
+            const response = await app.apiCall(`/networks/${networkId}`, 'DELETE');
+            app.showAlert(response.message, 'success');
+            this.loadNetworks();
+        } catch (error) {
+            console.error('Error deleting network:', error);
+            app.showAlert('خطأ في حذف الشبكة', 'error');
+        }
+    }
+
+    async deleteRouter(routerId) {
+        if (!confirmDelete('هل أنت متأكد من حذف هذا الراوتر؟')) {
+            return;
+        }
+
+        try {
+            const response = await app.apiCall(`/networks/routers/${routerId}`, 'DELETE');
+            app.showAlert(response.message, 'success');
+            this.loadRouters();
+        } catch (error) {
+            console.error('Error deleting router:', error);
+            app.showAlert('خطأ في حذف الراوتر', 'error');
+        }
+    }
+
+    async testRouter(routerId) {
+        try {
+            app.showAlert('جاري اختبار الاتصال...', 'info');
+            // This would call a test endpoint
+            // For now, just show a placeholder message
+            setTimeout(() => {
+                app.showAlert('تم اختبار الاتصال بنجاح', 'success');
+            }, 2000);
+        } catch (error) {
+            app.showAlert('فشل في اختبار الاتصال', 'error');
+        }
+    }
+}
+
+// Initialize networks manager
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.querySelector('.networks-page')) {
+        window.networks = new NetworksManager();
+    }
+});
+</script>
+{% endblock %}

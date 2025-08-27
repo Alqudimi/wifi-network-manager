@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام إدارة شبكات Wi-Fi{% endblock %}</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.css">
+    
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% if not hide_sidebar %}
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>
+                    <i data-feather="wifi"></i>
+                    إدارة Wi-Fi
+                </h2>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="/" class="nav-link" data-page="dashboard">
+                        <i data-feather="home"></i>
+                        لوحة التحكم
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/vouchers" class="nav-link" data-page="vouchers">
+                        <i data-feather="credit-card"></i>
+                        إدارة الكروت
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/networks" class="nav-link" data-page="networks">
+                        <i data-feather="wifi"></i>
+                        إعدادات الشبكة
+                    </a>
+                </li>
+                <li class="nav-item admin-only">
+                    <a href="/users" class="nav-link" data-page="users">
+                        <i data-feather="users"></i>
+                        إدارة المستخدمين
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/captive" class="nav-link" data-page="captive" target="_blank">
+                        <i data-feather="globe"></i>
+                        بوابة الدخول
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-info">
+                        <div class="user-name">المدير</div>
+                        <div class="user-role">مدير النظام</div>
+                    </div>
+                    <button class="btn btn-sm btn-secondary logout-btn">
+                        <i data-feather="log-out"></i>
+                        خروج
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+            
+            {% if not hide_sidebar %}
+        </main>
+    </div>
+    {% endif %}
+
+    <!-- Modals -->
+    {% block modals %}{% endblock %}
+
+    <!-- JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+
+    <script>
+        // Initialize Feather icons
+        feather.replace();
+        
+        // Highlight active navigation
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                
+                if (link.getAttribute('href') === currentPath || 
+                    (currentPath === '/' && link.getAttribute('href') === '/')) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

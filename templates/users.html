@@ -1,0 +1,816 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المستخدمين - نظام إدارة شبكات Wi-Fi{% endblock %}
+
+{% block content %}
+<div class="users-page admin-only">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">إدارة المستخدمين</h1>
+            <p class="page-subtitle">إدارة حسابات المستخدمين وصلاحياتهم</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="app.showModal('create-user-modal')">
+                <i data-feather="user-plus"></i>
+                إضافة مستخدم
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i data-feather="users"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value" id="total-users">0</div>
+                <div class="stat-label">إجمالي المستخدمين</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i data-feather="check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value" id="active-users">0</div>
+                <div class="stat-label">مستخدمين نشطين</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i data-feather="shield"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value" id="admin-users">0</div>
+                <div class="stat-label">مديرين</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon info">
+                <i data-feather="user-check"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value" id="operator-users">0</div>
+                <div class="stat-label">مشغلين</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">فلترة المستخدمين</h3>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" class="filter-form">
+                <div class="filter-row">
+                    <div class="form-group">
+                        <label class="form-label">الدور</label>
+                        <select name="role" class="form-select">
+                            <option value="">جميع الأدوار</option>
+                            <option value="admin">مدير</option>
+                            <option value="operator">مشغل</option>
+                            <option value="user">مستخدم</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">الحالة</label>
+                        <select name="is_active" class="form-select">
+                            <option value="">جميع الحالات</option>
+                            <option value="true">نشط</option>
+                            <option value="false">معطل</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">البحث</label>
+                        <input type="text" name="search" class="form-input" placeholder="البحث في الاسم أو البريد">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">تطبيق</button>
+                        <button type="button" id="clear-filters" class="btn btn-secondary">مسح</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">قائمة المستخدمين</h3>
+            <div class="card-actions">
+                <button class="btn btn-sm btn-secondary" onclick="users.loadUsers()">
+                    <i data-feather="refresh-cw"></i>
+                    تحديث
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="users-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>جاري تحميل المستخدمين...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <div class="pagination-info">
+            <span id="pagination-info">عرض 0-0 من 0</span>
+        </div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Create User Modal -->
+<div id="create-user-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">إضافة مستخدم جديد</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="create-user-form">
+                <div class="form-group">
+                    <label class="form-label">اسم المستخدم *</label>
+                    <input type="text" 
+                           name="username" 
+                           class="form-input" 
+                           required
+                           pattern="[a-zA-Z0-9_-]{3,20}"
+                           placeholder="أدخل اسم المستخدم">
+                    <small class="form-help">3-20 حرف، أحرف إنجليزية وأرقام و - _ فقط</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">البريد الإلكتروني *</label>
+                    <input type="email" 
+                           name="email" 
+                           class="form-input" 
+                           required
+                           placeholder="أدخل البريد الإلكتروني">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">كلمة المرور *</label>
+                    <input type="password" 
+                           name="password" 
+                           class="form-input" 
+                           required
+                           minlength="6"
+                           placeholder="أدخل كلمة المرور">
+                    <small class="form-help">6 أحرف على الأقل</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">تأكيد كلمة المرور *</label>
+                    <input type="password" 
+                           name="confirm_password" 
+                           class="form-input" 
+                           required
+                           placeholder="أعد إدخال كلمة المرور">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">الدور *</label>
+                    <select name="role" class="form-select" required>
+                        <option value="">اختر الدور</option>
+                        <option value="admin">مدير</option>
+                        <option value="operator">مشغل</option>
+                        <option value="user">مستخدم</option>
+                    </select>
+                    <small class="form-help">
+                        <strong>مدير:</strong> صلاحيات كاملة<br>
+                        <strong>مشغل:</strong> إدارة الكروت والشبكات<br>
+                        <strong>مستخدم:</strong> عرض فقط
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_active" checked>
+                        حساب نشط
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="user-plus"></i>
+                        إضافة المستخدم
+                    </button>
+                    <button type="button" class="btn btn-secondary modal-close">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="edit-user-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">تعديل المستخدم</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="edit-user-form">
+                <input type="hidden" name="user_id" id="edit-user-id">
+                
+                <div class="form-group">
+                    <label class="form-label">اسم المستخدم</label>
+                    <input type="text" 
+                           name="username" 
+                           class="form-input" 
+                           readonly
+                           id="edit-username">
+                    <small class="form-help">لا يمكن تغيير اسم المستخدم</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">البريد الإلكتروني</label>
+                    <input type="email" 
+                           name="email" 
+                           class="form-input" 
+                           id="edit-email">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">كلمة مرور جديدة</label>
+                    <input type="password" 
+                           name="password" 
+                           class="form-input" 
+                           minlength="6"
+                           placeholder="اتركه فارغاً للاحتفاظ بكلمة المرور الحالية">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">الدور</label>
+                    <select name="role" class="form-select" id="edit-role">
+                        <option value="admin">مدير</option>
+                        <option value="operator">مشغل</option>
+                        <option value="user">مستخدم</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_active" id="edit-is-active">
+                        حساب نشط
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="save"></i>
+                        حفظ التغييرات
+                    </button>
+                    <button type="button" class="btn btn-secondary modal-close">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.user-card {
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: var(--surface-color);
+    transition: box-shadow 0.2s;
+}
+
+.user-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.user-info h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.user-email {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.user-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.role-badge.admin {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.role-badge.operator {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.role-badge.user {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.user-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.user-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h4 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+}
+
+.last-login {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .user-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .user-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-actions {
+        justify-content: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Users management JavaScript
+class UsersManager {
+    constructor() {
+        this.currentPage = 1;
+        this.itemsPerPage = 10;
+        this.currentFilter = {};
+        this.users = [];
+        this.init();
+    }
+
+    init() {
+        this.loadUsers();
+        this.loadStats();
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Create user form
+        const createForm = document.getElementById('create-user-form');
+        if (createForm) {
+            createForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createUser();
+            });
+        }
+
+        // Edit user form
+        const editForm = document.getElementById('edit-user-form');
+        if (editForm) {
+            editForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.updateUser();
+            });
+        }
+
+        // Filters
+        const filterForm = document.getElementById('filter-form');
+        if (filterForm) {
+            filterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.applyFilters();
+            });
+        }
+
+        // Clear filters
+        const clearFiltersBtn = document.getElementById('clear-filters');
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => {
+                this.clearFilters();
+            });
+        }
+
+        // Password confirmation validation
+        const confirmPassword = document.querySelector('input[name="confirm_password"]');
+        if (confirmPassword) {
+            confirmPassword.addEventListener('input', (e) => {
+                this.validatePasswordConfirmation();
+            });
+        }
+    }
+
+    validatePasswordConfirmation() {
+        const password = document.querySelector('#create-user-form input[name="password"]').value;
+        const confirmPassword = document.querySelector('#create-user-form input[name="confirm_password"]').value;
+        const confirmInput = document.querySelector('#create-user-form input[name="confirm_password"]');
+
+        if (password !== confirmPassword) {
+            confirmInput.setCustomValidity('كلمات المرور غير متطابقة');
+        } else {
+            confirmInput.setCustomValidity('');
+        }
+    }
+
+    async loadUsers() {
+        try {
+            showLoading(document.getElementById('users-container'));
+
+            const params = new URLSearchParams({
+                page: this.currentPage,
+                per_page: this.itemsPerPage,
+                ...this.currentFilter
+            });
+
+            const response = await app.apiCall(`/admin/users?${params}`);
+            this.users = response.users;
+            this.displayUsers();
+            this.updatePagination(response.total, response.pages, response.current_page);
+
+        } catch (error) {
+            console.error('Error loading users:', error);
+            app.showAlert('خطأ في تحميل المستخدمين', 'error');
+        }
+    }
+
+    async loadStats() {
+        try {
+            const response = await app.apiCall('/admin/stats');
+            this.updateStats(response);
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
+
+    updateStats(stats) {
+        const statElements = {
+            'total-users': stats.total_users || 0,
+            'active-users': stats.active_users || 0,
+            'admin-users': stats.admin_users || 0,
+            'operator-users': stats.operator_users || 0
+        };
+
+        Object.entries(statElements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value.toLocaleString('ar-EG');
+            }
+        });
+    }
+
+    displayUsers() {
+        const container = document.getElementById('users-container');
+        if (!container) return;
+
+        if (this.users.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i data-feather="users"></i>
+                    <h4>لا توجد مستخدمين</h4>
+                    <p>قم بإضافة مستخدم جديد للبدء</p>
+                    <button class="btn btn-primary" onclick="app.showModal('create-user-modal')">
+                        <i data-feather="user-plus"></i>
+                        إضافة مستخدم
+                    </button>
+                </div>
+            `;
+            feather.replace();
+            return;
+        }
+
+        const usersHTML = this.users.map(user => `
+            <div class="user-card">
+                <div class="user-header">
+                    <div class="user-info">
+                        <h4>${user.username}</h4>
+                        <div class="user-email">${user.email}</div>
+                        <div class="user-status">
+                            <div class="status-indicator ${user.is_active ? 'active' : 'inactive'}"></div>
+                            <span>${user.is_active ? 'نشط' : 'معطل'}</span>
+                            <span class="role-badge ${user.role}">${this.getRoleText(user.role)}</span>
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="btn btn-sm btn-primary" onclick="users.editUser(${user.id})">
+                            <i data-feather="edit"></i>
+                            تعديل
+                        </button>
+                        ${user.id !== app.currentUser?.id ? `
+                            <button class="btn btn-sm ${user.is_active ? 'btn-warning' : 'btn-success'}" 
+                                    onclick="users.toggleUser(${user.id})">
+                                <i data-feather="${user.is_active ? 'user-x' : 'user-check'}"></i>
+                                ${user.is_active ? 'تعطيل' : 'تفعيل'}
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="users.deleteUser(${user.id})">
+                                <i data-feather="trash-2"></i>
+                                حذف
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="user-details">
+                    <div class="detail-item">
+                        <div class="detail-label">تاريخ الإنشاء</div>
+                        <div class="detail-value">${app.formatDate(user.created_at)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">آخر دخول</div>
+                        <div class="detail-value last-login">
+                            ${user.last_login ? app.formatDate(user.last_login) : 'لم يسجل دخول'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = usersHTML;
+        feather.replace();
+    }
+
+    async createUser() {
+        try {
+            this.validatePasswordConfirmation();
+            
+            const form = document.getElementById('create-user-form');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const formData = new FormData(form);
+            
+            const data = {
+                username: formData.get('username'),
+                email: formData.get('email'),
+                password: formData.get('password'),
+                role: formData.get('role'),
+                is_active: formData.has('is_active')
+            };
+
+            const response = await app.apiCall('/admin/users', 'POST', data);
+            
+            app.showAlert(response.message, 'success');
+            app.closeModals();
+            this.loadUsers();
+            this.loadStats();
+            form.reset();
+
+        } catch (error) {
+            console.error('Error creating user:', error);
+            app.showAlert('خطأ في إنشاء المستخدم', 'error');
+        }
+    }
+
+    editUser(userId) {
+        const user = this.users.find(u => u.id === userId);
+        if (!user) return;
+
+        // Fill edit form
+        document.getElementById('edit-user-id').value = user.id;
+        document.getElementById('edit-username').value = user.username;
+        document.getElementById('edit-email').value = user.email;
+        document.getElementById('edit-role').value = user.role;
+        document.getElementById('edit-is-active').checked = user.is_active;
+
+        app.showModal('edit-user-modal');
+    }
+
+    async updateUser() {
+        try {
+            const form = document.getElementById('edit-user-form');
+            const formData = new FormData(form);
+            const userId = formData.get('user_id');
+            
+            const data = {
+                email: formData.get('email'),
+                role: formData.get('role'),
+                is_active: formData.has('is_active')
+            };
+
+            // Only include password if provided
+            const password = formData.get('password');
+            if (password) {
+                data.password = password;
+            }
+
+            const response = await app.apiCall(`/admin/users/${userId}`, 'PUT', data);
+            
+            app.showAlert(response.message, 'success');
+            app.closeModals();
+            this.loadUsers();
+            this.loadStats();
+
+        } catch (error) {
+            console.error('Error updating user:', error);
+            app.showAlert('خطأ في تحديث المستخدم', 'error');
+        }
+    }
+
+    async toggleUser(userId) {
+        try {
+            const user = this.users.find(u => u.id === userId);
+            if (!user) return;
+
+            const response = await app.apiCall(`/admin/users/${userId}`, 'PUT', {
+                is_active: !user.is_active
+            });
+            
+            app.showAlert(response.message, 'success');
+            this.loadUsers();
+            this.loadStats();
+
+        } catch (error) {
+            console.error('Error toggling user:', error);
+            app.showAlert('خطأ في تغيير حالة المستخدم', 'error');
+        }
+    }
+
+    async deleteUser(userId) {
+        if (!confirmDelete('هل أنت متأكد من حذف هذا المستخدم؟')) {
+            return;
+        }
+
+        try {
+            const response = await app.apiCall(`/admin/users/${userId}`, 'DELETE');
+            app.showAlert(response.message, 'success');
+            this.loadUsers();
+            this.loadStats();
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            app.showAlert('خطأ في حذف المستخدم', 'error');
+        }
+    }
+
+    getRoleText(role) {
+        const roles = {
+            'admin': 'مدير',
+            'operator': 'مشغل',
+            'user': 'مستخدم'
+        };
+        return roles[role] || role;
+    }
+
+    applyFilters() {
+        const form = document.getElementById('filter-form');
+        const formData = new FormData(form);
+        
+        this.currentFilter = {};
+        for (let [key, value] of formData.entries()) {
+            if (value) {
+                this.currentFilter[key] = value;
+            }
+        }
+        
+        this.currentPage = 1;
+        this.loadUsers();
+    }
+
+    clearFilters() {
+        this.currentFilter = {};
+        this.currentPage = 1;
+        
+        const form = document.getElementById('filter-form');
+        if (form) {
+            form.reset();
+        }
+        
+        this.loadUsers();
+    }
+
+    updatePagination(total, pages, currentPage) {
+        const paginationContainer = document.getElementById('pagination');
+        if (!paginationContainer) return;
+
+        let paginationHTML = '';
+        
+        // Previous button
+        if (currentPage > 1) {
+            paginationHTML += `
+                <button class="btn btn-secondary" onclick="users.goToPage(${currentPage - 1})">
+                    السابق
+                </button>
+            `;
+        }
+
+        // Page numbers
+        for (let i = Math.max(1, currentPage - 2); i <= Math.min(pages, currentPage + 2); i++) {
+            paginationHTML += `
+                <button class="btn ${i === currentPage ? 'btn-primary' : 'btn-secondary'}" 
+                        onclick="users.goToPage(${i})">
+                    ${i}
+                </button>
+            `;
+        }
+
+        // Next button
+        if (currentPage < pages) {
+            paginationHTML += `
+                <button class="btn btn-secondary" onclick="users.goToPage(${currentPage + 1})">
+                    التالي
+                </button>
+            `;
+        }
+
+        paginationContainer.innerHTML = paginationHTML;
+
+        // Update info
+        const infoElement = document.getElementById('pagination-info');
+        if (infoElement) {
+            const start = ((currentPage - 1) * this.itemsPerPage) + 1;
+            const end = Math.min(currentPage * this.itemsPerPage, total);
+            infoElement.textContent = `عرض ${start}-${end} من ${total}`;
+        }
+    }
+
+    goToPage(page) {
+        this.currentPage = page;
+        this.loadUsers();
+    }
+}
+
+// Initialize users manager
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.querySelector('.users-page')) {
+        window.users = new UsersManager();
+    }
+});
+</script>
+{% endblock %}

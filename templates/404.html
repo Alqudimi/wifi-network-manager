@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% set hide_sidebar = true %}
+
+{% block title %}الصفحة غير موجودة - 404{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-container">
+        <div class="error-illustration">
+            <i data-feather="search"></i>
+        </div>
+        
+        <div class="error-content">
+            <h1 class="error-code">404</h1>
+            <h2 class="error-title">الصفحة غير موجودة</h2>
+            <p class="error-description">
+                عذراً، الصفحة التي تبحث عنها غير موجودة أو تم نقلها إلى مكان آخر.
+            </p>
+            
+            <div class="error-actions">
+                <a href="/" class="btn btn-primary">
+                    <i data-feather="home"></i>
+                    العودة للرئيسية
+                </a>
+                <button onclick="history.back()" class="btn btn-secondary">
+                    <i data-feather="arrow-right"></i>
+                    العودة للخلف
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.error-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-color);
+    padding: 2rem;
+}
+
+.error-container {
+    text-align: center;
+    max-width: 500px;
+}
+
+.error-illustration {
+    width: 6rem;
+    height: 6rem;
+    background: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    color: white;
+    font-size: 3rem;
+}
+
+.error-code {
+    font-size: 4rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    line-height: 1;
+}
+
+.error-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.error-description {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.error-actions .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+    .error-code {
+        font-size: 3rem;
+    }
+    
+    .error-title {
+        font-size: 1.5rem;
+    }
+    
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .error-actions .btn {
+        width: 100%;
+        max-width: 200px;
+    }
+}
+</style>
+{% endblock %}

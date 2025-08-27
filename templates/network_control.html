@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم في الشبكة - نظام إدارة WiFi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>إدارة الشبكة</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/"><i data-feather="home"></i> الرئيسية</a></li>
+                <li><a href="/vouchers"><i data-feather="credit-card"></i> كروت الاتصال</a></li>
+                <li><a href="/networks"><i data-feather="wifi"></i> الشبكات</a></li>
+                <li><a href="/network_control" class="active"><i data-feather="settings"></i> التحكم بالشبكة</a></li>
+                <li><a href="/users"><i data-feather="users"></i> المستخدمين</a></li>
+            </ul>
+            <div class="nav-footer">
+                <button onclick="logout()" class="logout-btn">
+                    <i data-feather="log-out"></i> تسجيل خروج
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="main-header">
+                <h1>التحكم في الشبكة</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="refreshAll()">
+                        <i data-feather="refresh-cw"></i> تحديث
+                    </button>
+                </div>
+            </header>
+
+            <!-- Network Status Overview -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i data-feather="router" class="icon-success"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="connected-routers">0</h3>
+                        <p>راوتر متصل</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i data-feather="users" class="icon-info"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="active-clients">0</h3>
+                        <p>مستخدم متصل</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i data-feather="activity" class="icon-warning"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="data-usage">0 MB</h3>
+                        <p>استهلاك البيانات</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i data-feather="clock" class="icon-error"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="active-sessions">0</h3>
+                        <p>جلسة نشطة</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Router Management -->
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>إدارة الراوترات</h2>
+                    <button class="btn btn-primary" onclick="showAddRouterModal()">
+                        <i data-feather="plus"></i> إضافة راوتر
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="routers-table">
+                        <thead>
+                            <tr>
+                                <th>اسم الراوتر</th>
+                                <th>النوع</th>
+                                <th>عنوان IP</th>
+                                <th>الحالة</th>
+                                <th>آخر اتصال</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="routers-tbody">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Connected Clients -->
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>المستخدمين المتصلين</h2>
+                    <button class="btn btn-secondary" onclick="refreshClients()">
+                        <i data-feather="refresh-cw"></i> تحديث
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="clients-table">
+                        <thead>
+                            <tr>
+                                <th>كود الكارت</th>
+                                <th>عنوان MAC</th>
+                                <th>عنوان IP</th>
+                                <th>وقت البداية</th>
+                                <th>الوقت المتبقي</th>
+                                <th>البيانات المستخدمة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clients-tbody">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Advanced Voucher Creation -->
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>إنشاء كروت متقدمة</h2>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>عدد الكروت</label>
+                        <input type="number" id="batch-quantity" min="1" max="1000" value="10">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>مدة الاتصال (ساعات)</label>
+                        <input type="number" id="batch-duration" min="1" max="720" value="24">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>حد البيانات (ميجابايت)</label>
+                        <input type="number" id="batch-data-limit" placeholder="بدون حد">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>سرعة الإنترنت (كيلوبايت/ثانية)</label>
+                        <input type="number" id="batch-speed-limit" placeholder="بدون حد">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>نوع الكارت</label>
+                        <select id="batch-voucher-type">
+                            <option value="standard">عادي</option>
+                            <option value="premium">مميز</option>
+                            <option value="unlimited">غير محدود</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>السعر</label>
+                        <input type="number" id="batch-price" step="0.01" value="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>صلاحية الكارت (أيام)</label>
+                        <input type="number" id="batch-expires-days" value="30">
+                    </div>
+                    
+                    <div class="form-group form-group-full">
+                        <button class="btn btn-success" onclick="createVoucherBatch()">
+                            <i data-feather="credit-card"></i> إنشاء الكروت
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add Router Modal -->
+    <div id="add-router-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>إضافة راوتر جديد</h3>
+                <span class="close" onclick="hideAddRouterModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="add-router-form">
+                    <div class="form-group">
+                        <label>اسم الراوتر</label>
+                        <input type="text" id="router-name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>نوع الراوتر</label>
+                        <select id="router-brand" required>
+                            <option value="">اختر النوع</option>
+                            <option value="MikroTik">MikroTik</option>
+                            <option value="Ubiquiti">Ubiquiti</option>
+                            <option value="Cisco">Cisco</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>الموديل</label>
+                        <input type="text" id="router-model">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>عنوان IP</label>
+                        <input type="text" id="router-ip" required placeholder="192.168.1.1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>اسم المستخدم</label>
+                        <input type="text" id="router-username" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>كلمة المرور</label>
+                        <input type="password" id="router-password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>منفذ API</label>
+                        <input type="number" id="router-port" placeholder="8728 للمايكروتك، 8443 لليوبيكويتي">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideAddRouterModal()">إلغاء</button>
+                <button class="btn btn-primary" onclick="addRouter()">إضافة الراوتر</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/network_control.js') }}"></script>
+    <script>
+        feather.replace();
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRouters();
+            loadClients();
+            loadNetworkStats();
+        });
+    </script>
+</body>
+</html>

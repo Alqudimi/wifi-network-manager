@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+{% set hide_sidebar = true %}
+
+{% block title %}بوابة دخول Wi-Fi{% endblock %}
+
+{% block content %}
+<div class="captive-portal">
+    <div class="portal-container">
+        <div class="portal-header">
+            <div class="portal-logo">
+                <i data-feather="wifi"></i>
+            </div>
+            <h1 class="portal-title">مرحباً بك في شبكة Wi-Fi</h1>
+            <p class="portal-subtitle">يرجى إدخال كود الكرت للوصول للإنترنت</p>
+        </div>
+
+        <div class="portal-form-container">
+            <form id="voucher-form" class="portal-form">
+                <div class="form-group">
+                    <label for="voucher-code" class="form-label">كود الكرت</label>
+                    <input type="text" 
+                           id="voucher-code" 
+                           name="code" 
+                           class="form-input portal-input" 
+                           required
+                           placeholder="أدخل كود الكرت"
+                           autocomplete="off"
+                           maxlength="20">
+                    <small class="form-help">أدخل الكود المكون من 8 أحرف</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-portal">
+                    <i data-feather="unlock"></i>
+                    الاتصال بالإنترنت
+                </button>
+            </form>
+
+            <div class="portal-qr-section">
+                <div class="qr-divider">
+                    <span>أو</span>
+                </div>
+                <button id="scan-qr-btn" class="btn btn-secondary btn-portal">
+                    <i data-feather="camera"></i>
+                    امسح QR Code
+                </button>
+            </div>
+        </div>
+
+        <div class="portal-info">
+            <div class="info-cards">
+                <div class="info-card">
+                    <i data-feather="clock"></i>
+                    <h4>وقت الوصول</h4>
+                    <p>مدة محددة حسب نوع الكرت</p>
+                </div>
+                <div class="info-card">
+                    <i data-feather="shield"></i>
+                    <h4>اتصال آمن</h4>
+                    <p>جميع الاتصالات محمية</p>
+                </div>
+                <div class="info-card">
+                    <i data-feather="zap"></i>
+                    <h4>سرعة عالية</h4>
+                    <p>إنترنت عالي السرعة</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="portal-footer">
+            <p>في حالة وجود مشاكل، يرجى التواصل مع الإدارة</p>
+            <div class="portal-links">
+                <a href="#" onclick="showTerms()">شروط الاستخدام</a>
+                <span>|</span>
+                <a href="#" onclick="showPrivacy()">سياسة الخصوصية</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="modal">
+        <div class="modal-content success-content">
+            <div class="success-icon">
+                <i data-feather="check-circle"></i>
+            </div>
+            <h3>تم الاتصال بنجاح!</h3>
+            <div class="connection-details" id="connection-details">
+                <!-- Details will be filled by JavaScript -->
+            </div>
+            <div class="success-actions">
+                <button class="btn btn-primary" onclick="window.close()">
+                    <i data-feather="globe"></i>
+                    تصفح الإنترنت
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>جاري التحقق من الكود...</p>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="qr-scanner-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>امسح QR Code</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="qr-scanner">
+                    <video id="qr-video" style="width: 100%; max-width: 400px;"></video>
+                    <canvas id="qr-canvas" style="display: none;"></canvas>
+                </div>
+                <p class="scanner-help">وجه الكاميرا نحو QR Code الموجود على الكرت</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.captive-portal {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.portal-container {
+    background: var(--surface-color);
+    border-radius: 1rem;
+    padding: 3rem;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.portal-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.portal-logo {
+    width: 4rem;
+    height: 4rem;
+    background: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: white;
+    font-size: 2rem;
+}
+
+.portal-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.portal-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.portal-form-container {
+    margin-bottom: 2rem;
+}
+
+.portal-input {
+    font-size: 1.2rem;
+    padding: 1rem;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.btn-portal {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.portal-qr-section {
+    margin-top: 1.5rem;
+}
+
+.qr-divider {
+    text-align: center;
+    margin: 1rem 0;
+    position: relative;
+}
+
+.qr-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.qr-divider span {
+    background: var(--surface-color);
+    padding: 0 1rem;
+    color: var(--text-secondary);
+}
+
+.portal-info {
+    margin: 2rem 0;
+}
+
+.info-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.info-card {
+    text-align: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+}
+
+.info-card i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.info-card h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+}
+
+.info-card p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.portal-footer {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.portal-footer p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.portal-links {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.portal-links a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.portal-links a:hover {
+    text-decoration: underline;
+}
+
+.success-content {
+    text-align: center;
+    padding: 3rem;
+}
+
+.success-icon {
+    width: 5rem;
+    height: 5rem;
+    background: var(--success-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: white;
+    font-size: 2.5rem;
+}
+
+.success-content h3 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.connection-details {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    text-align: right;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.detail-row:last-child {
+    margin-bottom: 0;
+}
+
+.detail-label {
+    color: var(--text-secondary);
+}
+
+.detail-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.success-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-content {
+    background: var(--surface-color);
+    padding: 2rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    color: var(--text-primary);
+}
+
+.loading-content p {
+    margin-top: 1rem;
+}
+
+.scanner-help {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+    .portal-container {
+        padding: 2rem;
+        margin: 1rem;
+    }
+    
+    .portal-title {
+        font-size: 1.5rem;
+    }
+    
+    .info-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .portal-links {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .portal-links span {
+        display: none;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const voucherForm = document.getElementById('voucher-form');
+    const voucherInput = document.getElementById('voucher-code');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const scanQrBtn = document.getElementById('scan-qr-btn');
+
+    // Auto-fill voucher code from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeParam = urlParams.get('code');
+    if (codeParam) {
+        voucherInput.value = codeParam.toUpperCase();
+        voucherInput.focus();
+    }
+
+    // Format input as user types
+    voucherInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+
+    // Handle form submission
+    voucherForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const code = voucherInput.value.trim();
+        if (!code) {
+            showAlert('يرجى إدخال كود الكرت', 'error');
+            return;
+        }
+
+        // Show loading
+        loadingOverlay.style.display = 'flex';
+
+        try {
+            const response = await fetch('/api/voucher/redeem', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showSuccessModal(result);
+            } else {
+                showAlert(result.error || 'فشل في تفعيل الكرت', 'error');
+            }
+        } catch (error) {
+            showAlert('خطأ في الاتصال بالخادم', 'error');
+        } finally {
+            loadingOverlay.style.display = 'none';
+        }
+    });
+
+    // QR Scanner functionality
+    scanQrBtn.addEventListener('click', () => {
+        showQRScanner();
+    });
+
+    function showSuccessModal(data) {
+        const modal = document.getElementById('success-modal');
+        const detailsContainer = document.getElementById('connection-details');
+        
+        let detailsHTML = `
+            <div class="detail-row">
+                <span class="detail-label">مدة الوصول:</span>
+                <span class="detail-value">${data.duration_hours} ساعة</span>
+            </div>
+        `;
+
+        if (data.data_limit_mb) {
+            detailsHTML += `
+                <div class="detail-row">
+                    <span class="detail-label">حد البيانات:</span>
+                    <span class="detail-value">${data.data_limit_mb} MB</span>
+                </div>
+            `;
+        } else {
+            detailsHTML += `
+                <div class="detail-row">
+                    <span class="detail-label">حد البيانات:</span>
+                    <span class="detail-value">غير محدود</span>
+                </div>
+            `;
+        }
+
+        detailsContainer.innerHTML = detailsHTML;
+        modal.classList.add('active');
+
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+            window.close();
+        }, 5000);
+    }
+
+    function showQRScanner() {
+        const modal = document.getElementById('qr-scanner-modal');
+        modal.classList.add('active');
+
+        // In a real implementation, you would use a QR scanner library
+        // For now, just show a placeholder message
+        showAlert('ميزة مسح QR Code قيد التطوير', 'info');
+        modal.classList.remove('active');
+    }
+
+    function showAlert(message, type = 'info') {
+        // Create alert element
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        alert.style.position = 'fixed';
+        alert.style.top = '1rem';
+        alert.style.left = '50%';
+        alert.style.transform = 'translateX(-50%)';
+        alert.style.zIndex = '10000';
+        alert.style.minWidth = '300px';
+        alert.style.textAlign = 'center';
+
+        document.body.appendChild(alert);
+
+        // Remove after 5 seconds
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+
+    // Modal close functionality
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-close') || 
+            e.target.classList.contains('modal')) {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('active');
+            });
+        }
+    });
+});
+
+function showTerms() {
+    alert('شروط الاستخدام:\n\n1. استخدام الإنترنت للأغراض القانونية فقط\n2. عدم تحميل أو مشاركة محتوى مخالف\n3. احترام قوانين حقوق النشر\n4. عدم محاولة اختراق الشبكة أو الأجهزة الأخرى');
+}
+
+function showPrivacy() {
+    alert('سياسة الخصوصية:\n\n1. لا نقوم بجمع معلومات شخصية\n2. يتم تسجيل نشاط التصفح لأغراض الأمان فقط\n3. لا نشارك البيانات مع أطراف ثالثة\n4. يتم حذف البيانات تلقائياً بعد انتهاء الجلسة');
+}
+</script>
+{% endblock %}
