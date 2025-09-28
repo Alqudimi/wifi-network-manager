@@ -34,5 +34,5 @@ class Config:
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None
     
-    # CORS settings
-    CORS_ORIGINS = ['http://localhost:3000', 'http://localhost:5000']
+    # CORS settings - Allow all hosts for Replit proxy
+    CORS_ORIGINS = ['*']

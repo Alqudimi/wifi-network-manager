@@ -17,10 +17,11 @@ import time
 class NetworkMonitor:
     """Monitor network usage and manage active connections"""
     
-    def __init__(self):
+    def __init__(self, app=None):
         self.monitoring = False
         self.monitor_thread = None
         self.active_sessions = {}
+        self.app = app
     
     def start_monitoring(self):
         """Start network monitoring in background"""
@@ -51,48 +52,50 @@ class NetworkMonitor:
         """Update data usage for active sessions"""
         from database import db
         
-        # Get active vouchers
-        active_vouchers = Voucher.query.filter_by(status='used').filter(
-            Voucher.session_end > datetime.utcnow()
-        ).all()
-        
-        for voucher in active_vouchers:
-            if voucher.client_ip:
-                try:
-                    # Simulate data usage calculation (in real implementation, 
-                    # this would interface with router APIs or network monitoring tools)
-                    data_used = self._get_client_data_usage(voucher.client_ip)
-                    if data_used > voucher.data_used_mb:
-                        voucher.data_used_mb = data_used
-                        
-                        # Check if data limit exceeded
-                        if voucher.data_limit_mb and data_used >= voucher.data_limit_mb:
-                            self._disconnect_voucher(voucher)
-                            voucher.status = 'expired'
-                            voucher.session_end = datetime.utcnow()
-                
-                except Exception as e:
-                    print(f"Error updating data for voucher {voucher.code}: {e}")
-        
-        db.session.commit()
+        with self.app.app_context():
+            # Get active vouchers
+            active_vouchers = Voucher.query.filter_by(status='used').filter(
+                Voucher.session_end > datetime.utcnow()
+            ).all()
+            
+            for voucher in active_vouchers:
+                if voucher.client_ip:
+                    try:
+                        # Simulate data usage calculation (in real implementation, 
+                        # this would interface with router APIs or network monitoring tools)
+                        data_used = self._get_client_data_usage(voucher.client_ip)
+                        if data_used > voucher.data_used_mb:
+                            voucher.data_used_mb = data_used
+                            
+                            # Check if data limit exceeded
+                            if voucher.data_limit_mb and data_used >= voucher.data_limit_mb:
+                                self._disconnect_voucher(voucher)
+                                voucher.status = 'expired'
+                                voucher.session_end = datetime.utcnow()
+                    
+                    except Exception as e:
+                        print(f"Error updating data for voucher {voucher.code}: {e}")
+            
+            db.session.commit()
     
     def _check_session_expiry(self):
         """Check for expired sessions and disconnect them"""
         from database import db
         
-        expired_vouchers = Voucher.query.filter_by(status='used').filter(
-            Voucher.session_end <= datetime.utcnow()
-        ).all()
-        
-        for voucher in expired_vouchers:
-            try:
-                self._disconnect_voucher(voucher)
-                voucher.status = 'expired'
-                print(f"Disconnected expired voucher: {voucher.code}")
-            except Exception as e:
-                print(f"Error disconnecting voucher {voucher.code}: {e}")
-        
-        db.session.commit()
+        with self.app.app_context():
+            expired_vouchers = Voucher.query.filter_by(status='used').filter(
+                Voucher.session_end <= datetime.utcnow()
+            ).all()
+            
+            for voucher in expired_vouchers:
+                try:
+                    self._disconnect_voucher(voucher)
+                    voucher.status = 'expired'
+                    print(f"Disconnected expired voucher: {voucher.code}")
+                except Exception as e:
+                    print(f"Error disconnecting voucher {voucher.code}: {e}")
+            
+            db.session.commit()
     
     def _get_client_data_usage(self, client_ip):
         """Get data usage for specific client IP (simplified simulation)"""
@@ -330,10 +333,13 @@ class VoucherManager:
         return "PDF export requires reportlab library"
 
 # Global network monitor instance
-network_monitor = NetworkMonitor()
+network_monitor = None
 
-def start_network_monitoring():
+def start_network_monitoring(app=None):
     """Start the network monitoring service"""
+    global network_monitor
+    if network_monitor is None:
+        network_monitor = NetworkMonitor(app)
     network_monitor.start_monitoring()
 
 def stop_network_monitoring():

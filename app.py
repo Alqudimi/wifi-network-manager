@@ -29,7 +29,7 @@ def create_app():
     
     # Initialize extensions
     db.init_app(app)
-    CORS(app)
+    CORS(app, origins="*")
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -172,7 +172,7 @@ def create_app():
         
         # Start network monitoring
         try:
-            start_network_monitoring()
+            start_network_monitoring(app)
             print("Network monitoring started")
         except Exception as e:
             print(f"Failed to start network monitoring: {e}")
